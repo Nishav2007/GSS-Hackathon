@@ -93,10 +93,6 @@ Astha/
 ├── history.php                  # Water history (protected)
 ├── billing.php                  # Billing & usage history (protected)
 ├── topup.php                    # Khalti topup page (protected)
-├── khalti-initiate.php          # Khalti payment initiate API
-├── khalti-callback.php          # Khalti payment verification callback
-├── payment-success.php          # Payment success page
-├── payment-failed.php           # Payment failed page
 ├── admin-login.php              # Admin login
 ├── admin-panel.php              # Admin control panel (protected)
 ├── logout.php                   # Logout handler
@@ -235,8 +231,6 @@ Set these in your server environment (or Apache `SetEnv`):
 APP_BASE_URL=http://localhost/Astha
 TOPUP_URL=https://nishavmansinghpradhan.com/Astha
 
-KHALTI_ENV=sandbox
-KHALTI_SECRET_KEY=your_khalti_secret_key
 
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=587

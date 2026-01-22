@@ -46,20 +46,3 @@ CREATE TABLE IF NOT EXISTS wallet_ledger (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Khalti payments table
-CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    purchase_order_id VARCHAR(64) NOT NULL UNIQUE,
-    pidx VARCHAR(64) UNIQUE,
-    amount_paisa INT NOT NULL,
-    status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending',
-    transaction_id VARCHAR(100) NULL,
-    khalti_response_json JSON NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_status (status),
-    INDEX idx_pidx (pidx),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

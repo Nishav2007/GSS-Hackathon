@@ -3,8 +3,8 @@
 -- Run this in phpMyAdmin or MySQL command line
 
 -- Create database
-CREATE DATABASE IF NOT EXISTS Astha CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE Astha;
+CREATE DATABASE IF NOT EXISTS u943303014_Astha CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE u943303014_Astha;
 
 -- Table 1: locations (42 locations)
 CREATE TABLE IF NOT EXISTS locations (
@@ -90,23 +90,6 @@ CREATE TABLE IF NOT EXISTS wallet_ledger (
     INDEX idx_user (user_id),
     INDEX idx_type (type),
     INDEX idx_created_at (created_at),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Table 7: payments (Khalti ePayment v2)
-CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    purchase_order_id VARCHAR(64) NOT NULL UNIQUE,
-    pidx VARCHAR(64) UNIQUE,
-    amount_paisa INT NOT NULL,
-    status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending',
-    transaction_id VARCHAR(100) NULL,
-    khalti_response_json JSON NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_status (status),
-    INDEX idx_pidx (pidx),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

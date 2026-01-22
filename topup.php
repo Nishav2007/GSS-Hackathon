@@ -2,8 +2,53 @@
 require_once 'config.php';
 requireLogin();
 
+$user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'];
 $user_email = $_SESSION['user_email'];
+
+$error = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $amountNpr = floatval($_POST['amount'] ?? 0);
+    if ($amountNpr < 10) {
+        $error = 'Minimum topup is Rs 10.';
+    } else {
+        $amountPaisa = nprToPaisa($amountNpr);
+        $conn->begin_transaction();
+        try {
+            $stmt = $conn->prepare("SELECT wallet_balance_paisa, service_status FROM users WHERE id = ? FOR UPDATE");
+            $stmt->bind_param('i', $user_id);
+            $stmt->execute();
+            $user = $stmt->get_result()->fetch_assoc();
+
+            $newBalance = (int) ($user['wallet_balance_paisa'] ?? 0) + $amountPaisa;
+            $newStatus = $newBalance >= WALLET_SUSPEND_THRESHOLD_PAISA ? 'active' : ($user['service_status'] ?? 'active');
+
+            $stmt = $conn->prepare("
+                UPDATE users
+                SET wallet_balance_paisa = ?, last_topup_at = NOW(), last_wallet_warning_level = 'none', service_status = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param('isi', $newBalance, $newStatus, $user_id);
+            $stmt->execute();
+
+            $desc = 'Wallet topup (manual)';
+            $stmt = $conn->prepare("
+                INSERT INTO wallet_ledger (user_id, type, amount_paisa, description, ref_type, ref_id, balance_after_paisa)
+                VALUES (?, 'topup', ?, ?, 'manual', NULL, ?)
+            ");
+            $stmt->bind_param('iisi', $user_id, $amountPaisa, $desc, $newBalance);
+            $stmt->execute();
+
+            $conn->commit();
+            $success = 'Topup successful.';
+        } catch (Exception $e) {
+            $conn->rollback();
+            $error = 'Topup failed. Please try again.';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,7 +77,14 @@ $user_email = $_SESSION['user_email'];
             <div class="icon-drop"></div>
             <h2 class="text-center" style="color: var(--teal-primary); margin-bottom: 1.5rem;">Topup Wallet</h2>
 
-            <form id="topupForm">
+            <?php if ($error): ?>
+                <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+            <?php endif; ?>
+
+            <form method="POST" action="topup.php">
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input type="text" id="name" name="name" value="<?= htmlspecialchars($user_name) ?>" required>
@@ -50,50 +102,9 @@ $user_email = $_SESSION['user_email'];
                     <input type="number" id="amount" name="amount" min="10" step="1" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Pay with Khalti</button>
-                <p class="text-center" style="margin-top: 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">
-                    Payments are processed via Khalti API. Callback verification runs automatically.
-                </p>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Topup Wallet</button>
             </form>
-            <div id="errorBox" class="alert alert-error hidden" style="margin-top: 1rem;"></div>
         </div>
     </div>
-
-    <script>
-        const form = document.getElementById('topupForm');
-        const errorBox = document.getElementById('errorBox');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorBox.classList.add('hidden');
-            errorBox.textContent = '';
-
-            const payload = {
-                name: document.getElementById('name').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                amount_npr: Number(document.getElementById('amount').value)
-            };
-
-            try {
-                const res = await fetch('khalti-initiate.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    const detail = data.detail ? ` (${data.detail})` : '';
-                    errorBox.textContent = (data.error || 'Payment initiation failed.') + detail;
-                    errorBox.classList.remove('hidden');
-                    return;
-                }
-                window.location.href = data.payment_url;
-            } catch (err) {
-                errorBox.textContent = 'Network error. Please try again.';
-                errorBox.classList.remove('hidden');
-            }
-        });
-    </script>
 </body>
 </html>
