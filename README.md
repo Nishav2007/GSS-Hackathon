@@ -91,12 +91,19 @@ Astha/
 ├── login.php                    # User login
 ├── dashboard.php                # User dashboard (protected)
 ├── history.php                  # Water history (protected)
+├── billing.php                  # Billing & usage history (protected)
+├── topup.php                    # Khalti topup page (protected)
+├── khalti-initiate.php          # Khalti payment initiate API
+├── khalti-callback.php          # Khalti payment verification callback
+├── payment-success.php          # Payment success page
+├── payment-failed.php           # Payment failed page
 ├── admin-login.php              # Admin login
 ├── admin-panel.php              # Admin control panel (protected)
 ├── logout.php                   # Logout handler
 ├── config.php                   # Database config + helpers
 ├── Astha-theme.css              # Main stylesheet
 ├── setup_database.sql           # Database setup script
+├── database_update.sql          # Migration script (existing DB)
 └── README.md                    # This file
 ```
 
@@ -135,6 +142,22 @@ Astha/
 - **XSS Prevention**: HTML escaping on all outputs
 - **Session Security**: Regenerated session IDs on login
 - **Input Validation**: Server-side validation for all inputs
+- **Idempotent Payments**: Khalti callback updates pending only
+
+## 💰 Wallet & Billing Features
+
+- Wallet balance per user (in paisa)
+- Billing rate: **1000 liters = Rs 32**
+- Admin enters liters per user, system deducts in 1000L blocks
+- Full billing history (topups + deductions + water usage)
+- Auto suspension when balance drops below **-Rs 1000**
+- Wallet warning emails at thresholds (0, -900, suspension)
+
+## 🔔 Email Notifications
+
+- Water flow email to all users in a location when admin turns flow **ON**
+- Wallet warnings sent via Hostinger SMTP
+- Sender: **Astha Water Alerts**
 
 ## 📊 User Features
 
@@ -203,6 +226,25 @@ Astha/
 - Verify `Astha-theme.css` path is correct
 - Clear browser cache
 - Check file permissions
+
+## 🔧 Environment Variables
+
+Set these in your server environment (or Apache `SetEnv`):
+
+```
+APP_BASE_URL=http://localhost/Astha
+TOPUP_URL=https://nishavmansinghpradhan.com/Astha
+
+KHALTI_ENV=sandbox
+KHALTI_SECRET_KEY=your_khalti_secret_key
+
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=587
+SMTP_USER=gooddream@nishavmansinghpradhan.com
+SMTP_PASS=your_smtp_password
+SMTP_FROM_EMAIL=gooddream@nishavmansinghpradhan.com
+SMTP_FROM_NAME=Astha Water Alerts
+```
 
 ## 📈 Future Enhancements
 

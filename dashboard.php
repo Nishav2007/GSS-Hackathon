@@ -8,6 +8,21 @@ $location_id = $_SESSION['user_location_id'];
 $location_name = $_SESSION['user_location_name'];
 $district = $_SESSION['user_district'];
 
+// Get user wallet and service status
+$stmt = $conn->prepare("
+    SELECT wallet_balance_paisa, service_status, total_liters_used, billed_blocks, unbilled_liters
+    FROM users WHERE id = ?
+");
+$stmt->bind_param('i', $user_id);
+$stmt->execute();
+$userData = $stmt->get_result()->fetch_assoc();
+$walletBalance = (int) ($userData['wallet_balance_paisa'] ?? 0);
+$serviceStatus = $userData['service_status'] ?? 'active';
+$totalLitersUsed = (int) ($userData['total_liters_used'] ?? 0);
+$billedBlocks = (int) ($userData['billed_blocks'] ?? 0);
+$unbilledLiters = (int) ($userData['unbilled_liters'] ?? 0);
+$billedCostPaisa = $billedBlocks * WATER_BLOCK_COST_PAISA;
+
 // Get current water status (LIVE)
 $stmt = $conn->prepare("SELECT water_status, status_updated_at FROM locations WHERE id = ?");
 $stmt->bind_param('i', $location_id);
@@ -53,6 +68,14 @@ if ($waterStatus === 'flowing') {
     $arrivalTime = date('h:i A', strtotime($latestEvent['arrival_time']));
     $statusMessage = "Water arrived in {$location_name}";
     $timeAgo = "Last arrival: {$arrivalDate} at {$arrivalTime}";
+}
+
+if ($serviceStatus === 'suspended') {
+    $statusClass = 'suspended';
+    $statusIcon = 'icon-drop-off';
+    $statusTitle = '🚫 Service Suspended';
+    $statusMessage = 'Your wallet balance is below -Rs 1000. Please top up to restore service.';
+    $timeAgo = '';
 }
 
 // Count total events for user's location
@@ -109,6 +132,8 @@ $recentEvents = $stmt->get_result();
             <ul class="nav-links">
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="history.php">History</a></li>
+                <li><a href="billing.php">Billing</a></li>
+                <li><a href="topup.php">Topup</a></li>
                 <li><a href="logout.php">Logout</a></li>
             </ul>
         </div>
@@ -121,6 +146,9 @@ $recentEvents = $stmt->get_result();
             <span class="live-badge">
                 <span class="pulse-dot"></span>
                 LIVE
+            </span>
+            <span class="status-pill <?= $serviceStatus === 'suspended' ? 'danger' : 'success' ?>" style="margin-left: 0.75rem;">
+                <?= $serviceStatus === 'suspended' ? 'Suspended' : 'Active' ?>
             </span>
         </div>
 
@@ -147,6 +175,18 @@ $recentEvents = $stmt->get_result();
             <div class="stat-card">
                 <h3><?= $eventsThisWeek ?></h3>
                 <p>This Week</p>
+            </div>
+            <div class="stat-card">
+                <h3><?= number_format($totalLitersUsed) ?> L</h3>
+                <p>Total Water Used</p>
+            </div>
+            <div class="stat-card">
+                <h3><?= formatNpr($walletBalance) ?></h3>
+                <p>Wallet Balance</p>
+            </div>
+            <div class="stat-card">
+                <h3><?= formatNpr($billedCostPaisa) ?></h3>
+                <p>Billed Amount</p>
             </div>
         </div>
 
@@ -182,6 +222,8 @@ $recentEvents = $stmt->get_result();
         <!-- Action Buttons -->
         <div style="text-align: center; margin: 2rem 0;">
             <a href="history.php" class="btn btn-primary">View Full History</a>
+            <a href="billing.php" class="btn btn-secondary" style="margin-left: 1rem;">View Billing</a>
+            <a href="topup.php" class="btn btn-success" style="margin-left: 1rem;">Topup Wallet</a>
             <a href="dashboard.php" class="btn btn-secondary" style="margin-left: 1rem;">Refresh Now</a>
         </div>
     </div>

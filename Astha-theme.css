@@ -603,6 +603,23 @@ body {
     border: 2px solid var(--danger-red);
 }
 
+.status-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: white;
+}
+
+.status-pill.success {
+    background: var(--success-green);
+}
+
+.status-pill.danger {
+    background: var(--danger-red);
+}
+
 /* ============================================
    DASHBOARD
    ============================================ */
@@ -675,6 +692,10 @@ body {
 
 .status-card.no-water {
     background: var(--danger-red);
+}
+
+.status-card.suspended {
+    background: #7c2d12;
 }
 
 @keyframes pulse-glow {

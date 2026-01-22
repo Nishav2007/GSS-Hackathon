@@ -26,9 +26,18 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     location_id INT NOT NULL,
+    wallet_balance_paisa INT DEFAULT 0,
+    service_status ENUM('active', 'suspended') DEFAULT 'active',
+    total_liters_used INT DEFAULT 0,
+    billed_blocks INT DEFAULT 0,
+    unbilled_liters INT DEFAULT 0,
+    last_topup_at DATETIME NULL,
+    last_wallet_warning_level ENUM('none', 'below_zero', 'below_900', 'suspended') DEFAULT 'none',
+    last_wallet_email_sent_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_location (location_id),
+    INDEX idx_service_status (service_status),
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -52,6 +61,53 @@ CREATE TABLE IF NOT EXISTS water_events (
     INDEX idx_location_date (location_id, arrival_date),
     INDEX idx_created_at (created_at),
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 5: user_water_usage (Admin enters liters per user)
+CREATE TABLE IF NOT EXISTS user_water_usage (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    liters INT NOT NULL,
+    note VARCHAR(255) NULL,
+    admin_id INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 6: wallet_ledger (Topups + deductions history)
+CREATE TABLE IF NOT EXISTS wallet_ledger (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    type ENUM('topup', 'deduction', 'adjustment') NOT NULL,
+    amount_paisa INT NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    ref_type VARCHAR(50) NULL,
+    ref_id INT NULL,
+    balance_after_paisa INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_type (type),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 7: payments (Khalti ePayment v2)
+CREATE TABLE IF NOT EXISTS payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    purchase_order_id VARCHAR(64) NOT NULL UNIQUE,
+    pidx VARCHAR(64) UNIQUE,
+    amount_paisa INT NOT NULL,
+    status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending',
+    transaction_id VARCHAR(100) NULL,
+    khalti_response_json JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_pidx (pidx),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert 42 Locations

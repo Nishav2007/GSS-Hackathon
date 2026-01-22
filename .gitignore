@@ -22,6 +22,9 @@ access_log
 
 # Environment and config (if you want to keep config.php private, uncomment next line)
 # config.php
+.env
+vendor/
+local-config.php
 
 # Database backups
 *.sql.bak
